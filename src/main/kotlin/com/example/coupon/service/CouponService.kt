@@ -6,6 +6,7 @@ import com.example.coupon.domain.UserCoupon
 import com.example.coupon.repository.CouponRepository
 import com.example.coupon.repository.UserCouponRepository
 import com.example.coupon.repository.entity.CouponEntity
+import com.example.coupon.repository.entity.UserCouponEntity
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -29,9 +30,9 @@ class CouponService(
 			if (userCouponRepository.existsByCouponIdAndUserId(userCoupon.couponId, userCoupon.userId)) {
 				throw IllegalStateException("이미 쿠폰을 발급받은 사용자입니다. userId : ${userCoupon.userId}, couponId: ${userCoupon.couponId}")
 			}
-			coupon.toDomain().validateQuantity()
 
 			coupon.publishCoupon()
+			userCouponRepository.save(UserCouponEntity(userCoupon))
 
 			true
 		}

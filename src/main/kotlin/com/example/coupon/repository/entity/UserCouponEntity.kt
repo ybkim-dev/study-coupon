@@ -1,5 +1,6 @@
 package com.example.coupon.repository.entity
 
+import com.example.coupon.domain.UserCoupon
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType.IDENTITY
@@ -19,4 +20,9 @@ class UserCouponEntity(
 	val id: Long = 0,
 	val couponId: Long,
 	val userId: Long,
-)
+) {
+	constructor(userCoupon: UserCoupon) : this(
+		userId = userCoupon.userId,
+		couponId = userCoupon.couponId
+	)
+}
