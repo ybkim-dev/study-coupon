@@ -1,45 +1,42 @@
 package com.example.coupon.service
 
-import com.example.coupon.config.TestDataSourceConfig
+import com.example.coupon.domain.UserCoupon
+import com.example.coupon.repository.CouponFixture
 import com.example.coupon.repository.CouponRepository
-import com.example.coupon.repository.entity.CouponEntity
 import io.kotest.core.spec.style.FeatureSpec
 import io.kotest.matchers.shouldBe
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
-import org.springframework.context.annotation.Import
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.data.repository.findByIdOrNull
 
-@Import(TestDataSourceConfig::class)
-@DataJpaTest
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
+@SpringBootTest
 class CouponServiceTest(
+	private val couponService: CouponService,
 	private val couponRepository: CouponRepository,
 ) : FeatureSpec({
-	beforeEach {
-		couponRepository.deleteAll()
+	beforeTest {
+		val coupon = CouponFixture.create(
+			name = "test coupon",
+			totalQuantity = 100
+		)
+
+		couponService.createCoupon(coupon.toDomain())
 	}
 
-	afterEach {
-		couponRepository.deleteAll()
-	}
+	feature("1개의 쿠폰에 동시에 100명이 접근하여 발행할 때") {
+		scenario("최종으로 발행된 쿠폰의 수는 100개로 일치한다.") {
+			val jobs = (1..100).map { it ->
+				async {
+					couponService.publishCoupon(UserCoupon(userId = it.toLong(), couponId = 1L))
+				}
+			}.awaitAll()
 
-	feature("coupon repository 는 save 명령을 받으면") {
-		scenario("coupon entity를 1회 저장한다") {
-			val coupon = CouponFixture.create(name = "coupon 1")
+			val coupon = requireNotNull(couponRepository.findByIdOrNull(1L))
 
-			val saved = couponRepository.save(coupon)
-			val found = couponRepository.findByIdOrNull(saved.id)
-			val foundAll = couponRepository.findAll()
-
-			found?.id shouldBe saved.id
-			foundAll.size shouldBe 1
+			jobs.count{it == true}  shouldBe 100L
+			coupon.totalQuantity shouldBe 0L
+			coupon.id shouldBe 1L
 		}
 	}
 })
-
-class CouponFixture {
-	companion object {
-		fun create(name: String) = CouponEntity(name = name)
-	}
-}
