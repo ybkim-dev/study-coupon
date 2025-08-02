@@ -14,14 +14,23 @@ class CouponEntity(
 	@GeneratedValue(strategy = IDENTITY)
 	val id: Long = 0,
 	val name: String,
+	var totalQuantity: Long,
 ) {
 	constructor(coupon: Coupon) : this(
 		id = coupon.id,
 		name = coupon.name,
+		totalQuantity = coupon.totalQuantity
 	)
 
 	fun toDomain() = Coupon(
 		id = id,
 		name = name,
+		totalQuantity = totalQuantity,
 	)
+
+	fun publishCoupon() {
+		check(totalQuantity > 0) { "해당 쿠폰은 잔여 수량이 없습니다." }
+
+		totalQuantity -= 1
+	}
 }
